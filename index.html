@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Códigos de Barras</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #1c06aa;
+            text-align: center;
+        }
+
+        .form-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: space-around;
+        }
+
+        .section {
+            flex: 1 1 300px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        h2 {
+            color: #0a4c9d;
+            margin-top: 0;
+            font-size: 20px;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+
+        input[type="text"], input[type="number"], textarea {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .barra {
+    float: right; /* Hace que la imagen flote a la derecha */
+    margin-left: 20px; /* Añade un margen a la izquierda para separación */
+}
+
+        button {
+            display: block;
+            font-size: 18px;
+            width: 100%;
+            padding: 10px;
+            margin-top: 20px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            color: white; /* Color del texto */
+            background: linear-gradient(90deg, #3B82F6, #EF4444); /* Gradiente de fondo */
+            border-radius: 8px; /* Bordes redondeados */
+            text-decoration: none; /* Sin subrayado */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Sombra para dar profundidad */
+            transition: background 0.3s ease, transform 0.2s ease; /* Efecto de transición */
+        }
+
+        button:hover {
+            background: linear-gradient(90deg, #1D4ED8, #B91C1C); /* Color de fondo al pasar el cursor */
+    transform: translateY(-2px); /* Levanta el botón un poco al hacer hover */
+        }
+
+        #barcodeCanvas {
+            display: none;
+        }
+
+        .info-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Generador de Códigos de Barras</h1>
+        
+        <div class="form-container">
+            <!-- Sección para descargar archivo TXT -->
+            <div class="section">
+                <h2>Generar numeros de folio</h2>
+                <form id="txtForm">
+                    <label for="firstFive">Ingresa los primeros 5 números, los siguientes 6 serán consecutivos:</label>
+                    <input type="text" id="firstFive" name="firstFive" placeholder="Ingrese 5 digitos" min="10000" max="99999" required>
+                    <p class="info-text">Coloca el numero de producto.</p>
+
+                    <label for="startConsecutive">Número inicial para la secuencia consecutiva:</label>
+                    <input type="text" id="startConsecutive" name="startConsecutive" placeholder="Ingrese 6 digitos" min="1" required>
+                    <p class="info-text">Número del cual comenzará la secuencia de dígitos.</p>
+
+                    <label for="numberOfCodes">Número de folios necesarios:</label>
+                    <input type="text" id="numberOfCodes" name="numberOfCodes" placeholder="1000" min="1" required>
+
+                    <label for="fileName">Nombre del archivo:</label>
+                    <input type="text" id="fileName" name="fileName" placeholder="Nombre del producto" required>
+                    <p class="info-text">La extensión .txt se añadirá automáticamente.</p>
+
+                    <button type="submit">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: middle; margin-right: 8px;">
+                            <path d="M.5 9.5a.5.5 0 0 1 .5-.5h4V1.5a.5.5 0 0 1 1 0v7h4a.5.5 0 0 1 .354.854l-4 4a.5.5 0 0 1-.707 0l-4-4A.5.5 0 0 1 .5 9.5zm0 5a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1h-10a.5.5 0 0 1-.5-.5z"/>
+                        </svg>
+                        Download Folios
+                    </button>
+                    <br>
+                    <p class="info-text">Los numeros de folio estan compuesto por 13 numeros: 5 numeros de producto,
+                         6 de secuencia consecutiva y
+                          2 de forma aleatoria.</p>
+                </form>
+            </div>
+
+            <!-- Sección para generar códigos de barras -->
+            <div class="section">
+                <h2>Generar Códigos de Barras</h2>
+                <form id="barcodeForm">
+                    <label for="numbers">Ingrese los valores del código de barras (uno por línea)</label>
+                    <textarea id="numbers" name="numbers" placeholder="Ej: 2586354789326" rows="5" required></textarea>
+                    <p class="info-text">Máximo 500 números.</p>
+
+                    <label for="fontSize">Tamaño de la fuente:</label>
+                    <input type="number" id="fontSize" name="fontSize" placeholder="Ej: 24" value="24" required>
+
+                    <button type="submit"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: middle; margin-right: 8px;">
+                        <path d="M.5 9.5a.5.5 0 0 1 .5-.5h4V1.5a.5.5 0 0 1 1 0v7h4a.5.5 0 0 1 .354.854l-4 4a.5.5 0 0 1-.707 0l-4-4A.5.5 0 0 1 .5 9.5zm0 5a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1h-10a.5.5 0 0 1-.5-.5z"/>
+                    </svg>Download  Gifs</button>
+                    <br>
+                    <img class="barra" src="bar.png" alt="">
+                </form>
+                <canvas id="barcodeCanvas" width="246" height="120"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Generador de códigos de barras
+        document.getElementById('barcodeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const numbersInput = document.getElementById('numbers').value;
+            const numbers = numbersInput.split(/[\n,]+/).map(num => num.trim()).slice(0, 500);
+            const fontSize = parseInt(document.getElementById('fontSize').value);
+            const zip = new JSZip();
+
+            const canvas = document.getElementById('barcodeCanvas');
+
+            for (const number of numbers) {
+                if (number) {
+                    JsBarcode(canvas, number, {
+                        format: "CODE128",
+                        width: 2,
+                        height: 80,
+                        displayValue: true,
+                        fontSize: fontSize,
+                    });
+
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                    const imgData = canvas.toDataURL('image/png');
+                    const blob = await (await fetch(imgData)).blob();
+                    
+                    zip.file(`${number}.gif`, blob);
+                }
+            }
+
+            zip.generateAsync({ type: 'blob' }).then(function(content) {
+                saveAs(content, 'codigos_de_barras.zip');
+            });
+        });
+
+        // Descarga de archivo TXT
+        document.getElementById('txtForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const firstFive = document.getElementById('firstFive').value;
+            const startConsecutive = parseInt(document.getElementById('startConsecutive').value);
+            const numberOfCodes = parseInt(document.getElementById('numberOfCodes').value);
+            let fileName = document.getElementById('fileName').value;
+
+            if (firstFive.length !== 5) {
+                alert("Los primeros 5 números deben ser exactamente 5 dígitos.");
+                return;
+            }
+
+            if (!fileName.endsWith('.txt')) {
+                fileName += '.txt';
+            }
+
+            let barcodes = [];
+
+            for (let i = startConsecutive; i < startConsecutive + numberOfCodes; i++) {
+                let consecutiveSix = String(i).padStart(6, '0'); // Genera el número consecutivo con 6 dígitos
+                let randomTwo = String(Math.floor(Math.random() * 100)).padStart(2, '0');
+                let barcode = firstFive + consecutiveSix + randomTwo;
+                barcodes.push(barcode);
+            }
+
+            let blob = new Blob([barcodes.join("\n")], { type: 'text/plain' });
+            let link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = fileName;
+            link.click();
+        });
+    </script>
+</body>
+</html>
